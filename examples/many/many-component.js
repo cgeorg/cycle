@@ -3,9 +3,9 @@ var h = Cycle.h;
 Cycle.registerCustomElement('item', function (User, Properties) {
   var Model = Cycle.createModel(function (Intent, Properties) {
     return {
-      id$: Properties.get('itemid$').shareReplay(1),
-      color$: Properties.get('color$').startWith('#888'),
-      width$: Properties.get('width$').startWith(200)
+      id$: Properties.get('itemid$').distinctUntilChanged().shareReplay(1),
+      color$: Properties.get('color$').distinctUntilChanged().startWith('#888'),
+      width$: Properties.get('width$').distinctUntilChanged().startWith(200)
     };
   });
 
@@ -47,7 +47,9 @@ Cycle.registerCustomElement('item', function (User, Properties) {
 
   var Intent = Cycle.createIntent(function (User) {
     return {
-      destroy$: User.event$('.remove-btn', 'click')
+      destroy$: User.event$('.remove-btn', 'click'),
+      changeColor$: User.event$('.color-field', 'input').map(function (ev) { return ev.currentTarget.value }),
+      changeWidth$: User.event$('.width-slider', 'input').map(function (ev) { return ev.currentTarget.value })
     };
   });
 
@@ -55,6 +57,10 @@ Cycle.registerCustomElement('item', function (User, Properties) {
 
   return {
     destroy$: Intent.get('destroy$')
-                .withLatestFrom(Model.get('id$'), function (ev, id) { return id; })
+                .withLatestFrom(Model.get('id$'), function (ev, id) { return id; }),
+    changeWidth$: Intent.get('changeWidth$')
+                    .withLatestFrom(Model.get('id$'), function(width, id) { return {id: id, width: width}; }),
+    changeColor$: Intent.get('changeColor$')
+                    .withLatestFrom(Model.get('id$'), function(color, id) { return {id: id, color: color}; })
   };
 });
